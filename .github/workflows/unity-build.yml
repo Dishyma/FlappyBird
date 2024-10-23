@@ -1,65 +1,89 @@
-name: Build Unity Project
+name: Unity Build and Release
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-permissions:
-  contents: write
-  packages: write
-  deployments: write
-  releases: write
+    branches: [ main ]
 
 jobs:
   build:
     name: Build Unity Project
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        targetPlatform:
+          - StandaloneWindows64
+          - StandaloneLinux64
+    
     steps:
-      # Checkout
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v3
         with:
           lfs: true
-          fetch-depth: 0
 
-      # Build
-      - name: Build project
-        uses: game-ci/unity-builder@v4
+      - name: Cache Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}
+          restore-keys: Library-
+
+      - name: Unity Build
+        uses: game-ci/unity-builder@v3
         env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
-          targetPlatform: StandaloneLinux64
-          allowDirtyBuild: true
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: YourGameName
 
-      # Comprimir build
-      - name: Zip Build
-        run: |
-          cd build/StandaloneLinux64
-          zip -r ../../GameBuild.zip .
-        
-      # Create Release
-      - name: Create Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "GameBuild.zip"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: v${{ github.run_number }}
-          name: Release v${{ github.run_number }}
-          body: |
-            Release automático del build
-            Versión: v${{ github.run_number }}
-            Commit: ${{ github.sha }}
-          
-      # Upload build como artifact (para debug)
-      - name: Upload build artifacts
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: Build-Linux
-          path: build/StandaloneLinux64
+          name: Build-${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}
+          
+  release:
+    needs: build
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download All Build Artifacts
+        uses: actions/download-artifact@v3
+        
+      - name: Zip Builds
+        run: |
+          zip -r windows-build.zip Build-StandaloneWindows64
+          zip -r linux-build.zip Build-StandaloneLinux64
+          
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          draft: false
+          prerelease: false
+          
+      - name: Upload Windows Build
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./windows-build.zip
+          asset_name: windows-build.zip
+          asset_content_type: application/zip
+          
+      - name: Upload Linux Build
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linux-build.zip
+          asset_name: linux-build.zip
+          asset_content_type: application/zip
