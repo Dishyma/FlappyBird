@@ -1,4 +1,4 @@
-name: Build and Release Unity Game
+name: Build Unity Project
 
 on:
   push:
@@ -9,86 +9,82 @@ on:
       - main
 
 env:
-  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+  UNITY_VERSION: 2020.1.1f1
 
 jobs:
-  build:
-    name: Build Unity Project
+  buildForAllPlatforms:
+    name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneLinux64
+          - StandaloneWindows64
     steps:
-      # Checkout del código
+      # Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
           
-      # Caché para mejorar tiempos de build
-      - name: Cache Library folder
-        uses: actions/cache@v3
+      # Cache
+      - uses: actions/cache@v3
         with:
           path: Library
-          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-
+          key: Library-${{ matrix.targetPlatform }}
+          restore-keys: Library-
 
-      # Configuración de Unity
-      - name: Unity - Activate
+      # Limpiar licencias antiguas
+      - name: Clean existing licenses
+        run: |
+          sudo rm -f /root/.local/share/unity3d/Unity/Unity_lic.ulf
+          sudo rm -f /root/.local/share/unity3d/Unity/Unity_v2020.x.ulf
+          
+      # Configurar nueva licencia
+      - name: Create License File
+        run: |
+          mkdir -p /root/.local/share/unity3d/Unity/
+          echo '${{ secrets.UNITY_LICENSE }}' > /root/.local/share/unity3d/Unity/Unity_lic.ulf
+        
+      # Activar licencia
+      - name: Activate Unity
         uses: game-ci/unity-activate@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-
-      # Build para Linux
-      - name: Unity - Builder
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          targetPlatform: StandaloneLinux64
-          buildName: GameBuild
-
-      # Build para Windows
-      - name: Build for Windows
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          targetPlatform: StandaloneWindows64
-          buildName: GameBuild
-
-      # Subir artifacts
-      - name: Upload Linux Build
-        uses: actions/upload-artifact@v3
-        with:
-          name: Build-Linux
-          path: build/StandaloneLinux64
           
-      - name: Upload Windows Build
+      # Test runner
+      - name: Run tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: .
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build
+      - name: Build project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          
+      # Upload build
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: Build-Windows
-          path: build/StandaloneWindows64
-
-      # Crear Release en GitHub
+          name: Build-${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}
+          
+      # Create Release
       - name: Create Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        id: create_release
         uses: softprops/action-gh-release@v1
+        with:
+          files: build/${{ matrix.targetPlatform }}/**
+          name: Release ${{ github.sha }}
+          tag_name: v${{ github.run_number }}
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
-          draft: false
-          prerelease: false
-          files: |
-            build/StandaloneLinux64/**
-            build/StandaloneWindows64/**
