@@ -1,0 +1,94 @@
+name: Build and Release Unity Game
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+
+jobs:
+  build:
+    name: Build Unity Project
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout del código
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          
+      # Caché para mejorar tiempos de build
+      - name: Cache Library folder
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # Configuración de Unity
+      - name: Unity - Activate
+        uses: game-ci/unity-activate@v2
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+
+      # Build para Linux
+      - name: Unity - Builder
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: StandaloneLinux64
+          buildName: GameBuild
+
+      # Build para Windows
+      - name: Build for Windows
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: StandaloneWindows64
+          buildName: GameBuild
+
+      # Subir artifacts
+      - name: Upload Linux Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: Build-Linux
+          path: build/StandaloneLinux64
+          
+      - name: Upload Windows Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: Build-Windows
+          path: build/StandaloneWindows64
+
+      # Crear Release en GitHub
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          draft: false
+          prerelease: false
+          files: |
+            build/StandaloneLinux64/**
+            build/StandaloneWindows64/**
