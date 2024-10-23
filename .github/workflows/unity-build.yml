@@ -8,29 +8,23 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  packages: write
+  deployments: write
+  releases: write
+
 jobs:
-  buildForAllPlatforms:
-    name: Build for ${{ matrix.targetPlatform }}
+  build:
+    name: Build Unity Project
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        targetPlatform:
-          - StandaloneLinux64
-          - StandaloneWindows64
     steps:
       # Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
-          
-      # Cache
-      - uses: actions/cache@v3
-        with:
-          path: Library
-          key: Library-${{ matrix.targetPlatform }}
-          restore-keys: Library-
+          fetch-depth: 0
 
       # Build
       - name: Build project
@@ -40,23 +34,32 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
-          targetPlatform: ${{ matrix.targetPlatform }}
-          
-      # Upload build
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: Build-${{ matrix.targetPlatform }}
-          path: build/${{ matrix.targetPlatform }}
-          
+          targetPlatform: StandaloneLinux64
+          allowDirtyBuild: true
+
+      # Comprimir build
+      - name: Zip Build
+        run: |
+          cd build/StandaloneLinux64
+          zip -r ../../GameBuild.zip .
+        
       # Create Release
       - name: Create Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
+        uses: ncipollo/release-action@v1
         with:
-          files: build/${{ matrix.targetPlatform }}/**
-          name: Release ${{ github.sha }}
-          tag_name: v${{ github.run_number }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "GameBuild.zip"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
+          body: |
+            Release automático del build
+            Versión: v${{ github.run_number }}
+            Commit: ${{ github.sha }}
+          
+      # Upload build como artifact (para debug)
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Build-Linux
+          path: build/StandaloneLinux64
