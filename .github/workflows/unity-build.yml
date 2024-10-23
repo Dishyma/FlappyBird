@@ -32,42 +32,6 @@ jobs:
           key: Library-${{ matrix.targetPlatform }}
           restore-keys: Library-
 
-      # Limpiar cualquier licencia existente
-      - name: Clean existing licenses
-        run: |
-          sudo rm -rf /root/.local/share/unity3d/Unity/
-          sudo rm -rf /home/runner/.local/share/unity3d/Unity/
-          sudo rm -rf ~/.local/share/unity3d/Unity/
-          
-      # Configurar directorio de licencia
-      - name: Create license directory
-        run: |
-          sudo mkdir -p /root/.local/share/unity3d/Unity/
-          sudo chmod -R 777 /root/.local/share/unity3d/Unity/
-          
-      # Request manual activation file
-      - name: Request manual activation file
-        id: request-manual
-        uses: game-ci/unity-request-activation-file@v2
-        env:
-          UNITY_VERSION: 2020.1.1f1
-
-      # Get activation file
-      - name: Get activation file
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ steps.request-manual.outputs.filePath }}
-          path: ${{ steps.request-manual.outputs.filePath }}
-
-      # Activar Unity manualmente
-      - name: Activate Unity
-        uses: game-ci/unity-activate@v2
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_LICENSING_SERVER: true
-
       # Build
       - name: Build project
         uses: game-ci/unity-builder@v4
@@ -77,7 +41,6 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
-          allowDirtyBuild: true
           
       # Upload build
       - name: Upload build artifacts
@@ -85,3 +48,15 @@ jobs:
         with:
           name: Build-${{ matrix.targetPlatform }}
           path: build/${{ matrix.targetPlatform }}
+          
+      # Create Release
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/${{ matrix.targetPlatform }}/**
+          name: Release ${{ github.sha }}
+          tag_name: v${{ github.run_number }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
