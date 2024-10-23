@@ -35,17 +35,11 @@ jobs:
           key: Library-${{ matrix.targetPlatform }}
           restore-keys: Library-
 
-      # Limpiar licencias antiguas
-      - name: Clean existing licenses
+      # Limpiar y crear directorios de licencia
+      - name: Setup License
         run: |
-          sudo rm -f /root/.local/share/unity3d/Unity/Unity_lic.ulf
-          sudo rm -f /root/.local/share/unity3d/Unity/Unity_v2020.x.ulf
-          
-      # Configurar nueva licencia
-      - name: Create License File
-        run: |
-          mkdir -p /root/.local/share/unity3d/Unity/
-          echo '${{ secrets.UNITY_LICENSE }}' > /root/.local/share/unity3d/Unity/Unity_lic.ulf
+          mkdir -p $HOME/.local/share/unity3d/Unity/
+          echo '${{ secrets.UNITY_LICENSE }}' > $HOME/.local/share/unity3d/Unity/Unity_lic.ulf
         
       # Activar licencia
       - name: Activate Unity
