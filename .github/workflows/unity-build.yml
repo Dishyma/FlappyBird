@@ -9,6 +9,7 @@ jobs:
     name: Build Unity Project
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         targetPlatform:
           - StandaloneWindows64
@@ -35,7 +36,11 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
-          buildName: YourGameName
+          buildName: FlappyBird
+          # Usando una versión estable verificada
+          unityVersion: 2022.3.12f1
+          # No especificamos customImage para usar la imagen por defecto
+          allowDirtyBuild: true # Permite builds aunque haya cambios sin commitear
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
