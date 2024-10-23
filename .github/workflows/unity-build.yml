@@ -35,22 +35,20 @@ jobs:
           key: Library-${{ matrix.targetPlatform }}
           restore-keys: Library-
 
-      # Limpiar y crear directorios de licencia
-      - name: Setup License
-        run: |
-          mkdir -p $HOME/.local/share/unity3d/Unity/
-          echo '${{ secrets.UNITY_LICENSE }}' > $HOME/.local/share/unity3d/Unity/Unity_lic.ulf
-        
-      # Activar licencia
+      # Activar Unity
       - name: Activate Unity
         uses: game-ci/unity-activate@v2
         env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           
       # Test runner
       - name: Run tests
         uses: game-ci/unity-test-runner@v4
         env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           projectPath: .
@@ -60,6 +58,8 @@ jobs:
       - name: Build project
         uses: game-ci/unity-builder@v4
         env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
