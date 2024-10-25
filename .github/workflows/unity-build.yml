@@ -1,94 +1,69 @@
-name: Unity Build and Release
+name: Build Unity Project
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build:
-    name: Build Unity Project
+  buildForAllPlatforms:
+    name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         targetPlatform:
-          - StandaloneWindows64
           - StandaloneLinux64
+          - StandaloneWindows64
     
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      # Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           lfs: true
 
-      - name: Cache Library
-        uses: actions/cache@v3
+      # Cache
+      - uses: actions/cache@v3
         with:
           path: Library
           key: Library-${{ matrix.targetPlatform }}
           restore-keys: Library-
 
-      - name: Unity Build
-        uses: game-ci/unity-builder@v3
+      # Build
+      - name: Build project
+        uses: game-ci/unity-builder@v4
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
-          buildName: FlappyBird
-          # Usando una versión estable verificada
-          unityVersion: 2022.3.12f1
-          # No especificamos customImage para usar la imagen por defecto
-          allowDirtyBuild: true # Permite builds aunque haya cambios sin commitear
 
-      - name: Upload Build Artifact
+      # Compress build
+      - name: Compress build
+        run: |
+          cd build/${{ matrix.targetPlatform }}
+          zip -r ../../${{ matrix.targetPlatform }}.zip .
+
+      # Upload compressed build as artifact
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: Build-${{ matrix.targetPlatform }}
-          path: build/${{ matrix.targetPlatform }}
-          
-  release:
-    needs: build
-    name: Create Release
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Download All Build Artifacts
-        uses: actions/download-artifact@v3
-        
-      - name: Zip Builds
-        run: |
-          zip -r windows-build.zip Build-StandaloneWindows64
-          zip -r linux-build.zip Build-StandaloneLinux64
-          
+          path: ${{ matrix.targetPlatform }}.zip
+
+      # Create Release with compressed files
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
         with:
+          files: ${{ matrix.targetPlatform }}.zip
+          name: Release ${{ github.sha }}
           tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
-          draft: false
-          prerelease: false
-          
-      - name: Upload Windows Build
-        uses: actions/upload-release-asset@v1
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./windows-build.zip
-          asset_name: windows-build.zip
-          asset_content_type: application/zip
-          
-      - name: Upload Linux Build
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linux-build.zip
-          asset_name: linux-build.zip
-          asset_content_type: application/zip
