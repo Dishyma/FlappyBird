@@ -11,6 +11,10 @@ public class Player : MonoBehaviour
     private Vector3 direction;
     private int spriteIndex;
 
+    public GameObject Laser;
+    public float laserCooldown = 0.5f;
+    private float lastLaserTime;
+
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -43,6 +47,11 @@ public class Player : MonoBehaviour
         Vector3 rotation = transform.eulerAngles;
         rotation.z = direction.y * tilt;
         transform.eulerAngles = rotation;
+
+        if (Input.GetKeyDown(KeyCode.X))
+        {
+            ShootLaser();
+        }
     }
 
     private void AnimateSprite()
@@ -65,6 +74,13 @@ public class Player : MonoBehaviour
         } else if (other.gameObject.CompareTag("Scoring")) {
             GameManager.Instance.IncreaseScore();
         }
+    }
+
+    private void ShootLaser()
+    {
+        lastLaserTime = Time.time;
+        Vector3 spawnPosition = transform.position + transform.right; // Ajusta según sea necesario
+        GameObject laser = Instantiate(Laser, spawnPosition, Quaternion.identity);
     }
 
 }

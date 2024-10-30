@@ -11,6 +11,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Text scoreText;
     [SerializeField] private GameObject playButton;
     [SerializeField] private GameObject gameOver;
+    
+    [SerializeField] private GameObject Boss; // Arrastra el prefab del jefe aquí en el Inspector
+    [SerializeField] private Vector3 bossSpawnPosition = new Vector3(10f, 0f, 0f); // Posición donde aparecerá el jefe
+    public bool bossSpawned = false;
 
     public int score { get; private set; } = 0;
 
@@ -71,6 +75,27 @@ public class GameManager : MonoBehaviour
     {
         score++;
         scoreText.text = score.ToString();
+
+        if (score >= 10 && !bossSpawned){
+            SpawnBoss();
+        }
     }
 
+    private void SpawnBoss()
+    {
+        bossSpawned = true;
+        spawner.gameObject.SetActive(false);
+        // Calcula la posición del jefe basada en la vista de la cámara
+        Vector3 spawnPos = Camera.main.ViewportToWorldPoint(new Vector3(1.1f, 0.5f, 0f));
+        spawnPos.z = 0f; // Asegura que está en el mismo plano Z que el juego
+        
+        Instantiate(Boss, spawnPos, Quaternion.identity);
+    }
+
+    public void BossDefeated()
+    {
+        // Implementa lo que sucede cuando el jefe es derrotado
+        Debug.Log("¡Jefe derrotado! ¡Has ganado!");
+        GameOver();
+    }
 }
