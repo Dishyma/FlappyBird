@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject playButton;
     [SerializeField] private GameObject gameOver;
     
-    [SerializeField] private GameObject Boss; // Arrastra el prefab del jefe aquí en el Inspector
+    [SerializeField] private GameObject bossPrefab; // Arrastra el prefab del jefe aquí en el Inspector
     [SerializeField] private Vector3 bossSpawnPosition = new Vector3(10f, 0f, 0f); // Posición donde aparecerá el jefe
     public bool bossSpawned = false;
 
@@ -52,15 +52,21 @@ public class GameManager : MonoBehaviour
 
         playButton.SetActive(false);
         gameOver.SetActive(false);
-
         Time.timeScale = 1f;
         player.enabled = true;
 
         Pipes[] pipes = FindObjectsOfType<Pipes>();
-
         for (int i = 0; i < pipes.Length; i++) {
             Destroy(pipes[i].gameObject);
         }
+
+        // Asegúrate de que el jefe no esté presente al inicio del juego
+        GameObject existingBoss = GameObject.FindGameObjectWithTag("Boss");
+        if (existingBoss != null) {
+            Destroy(existingBoss);
+        }
+        bossSpawned = false;
+        spawner.gameObject.SetActive(true);
     }
 
     public void GameOver()
@@ -75,21 +81,32 @@ public class GameManager : MonoBehaviour
     {
         score++;
         scoreText.text = score.ToString();
+        Debug.Log($"Score incrementado a: {score}");
 
-        if (score >= 10 && !bossSpawned){
+        if (score >= 10 && !bossSpawned)
+        {
+            Debug.Log("Score llegó a 10, llamando a SpawnBoss()");
             SpawnBoss();
         }
     }
 
     private void SpawnBoss()
     {
+        if (bossPrefab == null)
+        {
+            Debug.LogError("Error: Boss Prefab no está asignado en el GameManager");
+            return;
+        }
+        Debug.Log("Iniciando spawn del boss");
         bossSpawned = true;
         spawner.gameObject.SetActive(false);
+
         // Calcula la posición del jefe basada en la vista de la cámara
         Vector3 spawnPos = Camera.main.ViewportToWorldPoint(new Vector3(1.1f, 0.5f, 0f));
         spawnPos.z = 0f; // Asegura que está en el mismo plano Z que el juego
         
-        Instantiate(Boss, spawnPos, Quaternion.identity);
+        GameObject bossInstance = Instantiate(bossPrefab, spawnPos, Quaternion.identity);
+        Debug.Log($"Boss spawneado en posición: {spawnPos}");
     }
 
     public void BossDefeated()

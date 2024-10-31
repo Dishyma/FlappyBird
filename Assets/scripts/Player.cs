@@ -11,7 +11,8 @@ public class Player : MonoBehaviour
     private Vector3 direction;
     private int spriteIndex;
 
-    public GameObject Laser;
+    [Header("Laser Settings")]
+    public GameObject laserPrefab;
     public float laserCooldown = 0.5f;
     private float lastLaserTime;
 
@@ -50,7 +51,8 @@ public class Player : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.X))
         {
-            ShootLaser();
+        Debug.Log("Intentando disparar láser"); // Añade esta línea
+        ShootLaser();
         }
     }
 
@@ -78,9 +80,25 @@ public class Player : MonoBehaviour
 
     private void ShootLaser()
     {
-        lastLaserTime = Time.time;
-        Vector3 spawnPosition = transform.position + transform.right; // Ajusta según sea necesario
-        GameObject laser = Instantiate(Laser, spawnPosition, Quaternion.identity);
+        Debug.Log("ShootLaser llamado");
+        if (Time.time - lastLaserTime >= laserCooldown)
+        {
+            if (laserPrefab != null)
+            {
+                Debug.Log("Instanciando láser");
+                lastLaserTime = Time.time;
+                Vector3 spawnPosition = transform.position + Vector3.right;
+                GameObject laser = Instantiate(laserPrefab, spawnPosition, Quaternion.identity);
+                Debug.Log("Láser instanciado: " + (laser != null));
+            }
+            else
+            {
+                Debug.LogError("El prefab del láser no está asignado");
+            }
+        }
+        else
+        {
+            Debug.Log("Esperando cooldown del láser");
+        }
     }
-
 }

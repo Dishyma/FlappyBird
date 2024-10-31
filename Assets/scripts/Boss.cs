@@ -6,11 +6,19 @@ public class Boss : MonoBehaviour
 {
     public int health = 10;
     public float moveSpeed = 2f;
+    public float amplitude = 2f; // Amplitud del movimiento vertical
+    private float initialY;
+
+    void Start()
+    {
+        initialY = transform.position.y;
+    }
 
     void Update()
     {
-        // Implementa el movimiento del jefe
-        transform.Translate(Vector3.left * moveSpeed * Time.deltaTime);
+        // Movimiento vertical sinusoidal
+        float newY = initialY + Mathf.Sin(Time.time * moveSpeed) * amplitude;
+        transform.position = new Vector3(transform.position.x, newY, transform.position.z);
     }
 
     public void TakeDamage(int damage)
