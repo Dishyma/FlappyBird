@@ -102,7 +102,7 @@ public class GameManager : MonoBehaviour
         spawner.gameObject.SetActive(false);
 
         // Calcula la posición del jefe basada en la vista de la cámara
-        Vector3 spawnPos = Camera.main.ViewportToWorldPoint(new Vector3(1.1f, 0.5f, 0f));
+        Vector3 spawnPos = Camera.main.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0f));
         spawnPos.z = 0f; // Asegura que está en el mismo plano Z que el juego
         
         GameObject bossInstance = Instantiate(bossPrefab, spawnPos, Quaternion.identity);

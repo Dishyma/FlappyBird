@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Boss : MonoBehaviour
 {
-    public int health = 10;
+    public int health = 5;
     public float moveSpeed = 2f;
     public float amplitude = 2f; // Amplitud del movimiento vertical
     private float initialY;

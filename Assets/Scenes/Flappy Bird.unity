@@ -300,8 +300,8 @@ MonoBehaviour:
   playButton: {fileID: 892178073}
   gameOver: {fileID: 298509898}
   bossPrefab: {fileID: 5306642345019298950, guid: 05780f8964c0bc3a189696c8aa8511ec, type: 3}
-  bossSpawnPosition: {x: 10, y: 0, z: 0}
-  bossSpawned: 1
+  bossSpawnPosition: {x: 3, y: 0, z: 0}
+  bossSpawned: 0
 --- !u!4 &149568775
 Transform:
   m_ObjectHideFlags: 0
