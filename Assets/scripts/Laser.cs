@@ -34,7 +34,6 @@ public class Laser : MonoBehaviour
             if (boss != null)
             {
                 boss.TakeDamage(damage);
-                GameManager.Instance.IncreaseScore();
             }
             Destroy(gameObject);
         }

@@ -24,6 +24,7 @@ public class Boss : MonoBehaviour
     public void TakeDamage(int damage)
     {
         health -= damage;
+        GameManager.Instance.IncreaseScore();
         if (health <= 0)
         {
             Destroy(gameObject);
