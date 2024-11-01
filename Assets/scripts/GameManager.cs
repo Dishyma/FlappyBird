@@ -14,9 +14,17 @@ public class GameManager : MonoBehaviour
     
     [SerializeField] private GameObject bossPrefab; // Arrastra el prefab del jefe aquí en el Inspector
     [SerializeField] private Vector3 bossSpawnPosition = new Vector3(10f, 0f, 0f); // Posición donde aparecerá el jefe
-    public bool bossSpawned = false;
 
-    public int score { get; private set; } = 0;
+    [SerializeField] private GameObject trophyPrefab; // Arrastra el prefab del trofeo aquí en el Inspector
+    [SerializeField] private GameObject victoryScreen; // Un nuevo GameObject para mostrar la pantalla de victoria
+
+    [SerializeField] private Text bestScoreText;
+    
+    public int score { get; private set; }
+    private int bestScore;
+
+
+    public bool bossSpawned = false;
 
     private void Awake()
     {
@@ -24,6 +32,32 @@ public class GameManager : MonoBehaviour
             DestroyImmediate(gameObject);
         } else {
             Instance = this;
+        }
+        LoadBestScore();
+    }
+
+    private void LoadBestScore()
+    {
+        bestScore = PlayerPrefs.GetInt("BestScore", 0);
+        UpdateBestScoreText();
+    }
+
+    private void SaveBestScore()
+    {
+        if (score > bestScore)
+        {
+            bestScore = score;
+            PlayerPrefs.SetInt("BestScore", bestScore);
+            PlayerPrefs.Save();
+            UpdateBestScoreText();
+        }
+    }
+
+    private void UpdateBestScoreText()
+    {
+        if (bestScoreText != null)
+        {
+            bestScoreText.text = "Best: " + bestScore.ToString();
         }
     }
 
@@ -36,7 +70,12 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        Pause();
+        // Asegúrate de que la pantalla de victoria esté desactivada al inicio
+        if (victoryScreen != null)
+        {
+            victoryScreen.SetActive(false);
+        }
+        Pause(); // Esto pausa el juego al inicio como estaba antes
     }
 
     public void Pause()
@@ -50,11 +89,17 @@ public class GameManager : MonoBehaviour
         score = 0;
         scoreText.text = score.ToString();
 
+        UpdateBestScoreText();
+
+        // Desactivamos todas las pantallas
         playButton.SetActive(false);
         gameOver.SetActive(false);
+        if (victoryScreen != null)
+        {
+            victoryScreen.SetActive(false);
+        }
         Time.timeScale = 1f;
         player.enabled = true;
-
         Pipes[] pipes = FindObjectsOfType<Pipes>();
         for (int i = 0; i < pipes.Length; i++) {
             Destroy(pipes[i].gameObject);
@@ -70,22 +115,29 @@ public class GameManager : MonoBehaviour
     }
 
     public void GameOver()
-    {
-        playButton.SetActive(true);
-        gameOver.SetActive(true);
 
-        Pause();
+    {
+        SaveBestScore();
+        UpdateBestScoreText();
+        // Solo mostrar Game Over si no hemos ganado (no hay victoria)
+        if (!victoryScreen.activeSelf)
+        {
+            playButton.SetActive(true);
+            gameOver.SetActive(true);
+            Pause();
+        }
     }
 
     public void IncreaseScore()
     {
         score++;
         scoreText.text = score.ToString();
-        Debug.Log($"Score incrementado a: {score}");
-
-        if (score >= 10 && !bossSpawned)
+        if (score > bestScore)
         {
-            Debug.Log("Score llegó a 10, llamando a SpawnBoss()");
+            SaveBestScore();
+        }
+        if (score >= 15 && !bossSpawned)
+        {
             SpawnBoss();
         }
     }
@@ -94,10 +146,8 @@ public class GameManager : MonoBehaviour
     {
         if (bossPrefab == null)
         {
-            Debug.LogError("Error: Boss Prefab no está asignado en el GameManager");
             return;
         }
-        Debug.Log("Iniciando spawn del boss");
         bossSpawned = true;
         spawner.gameObject.SetActive(false);
 
@@ -106,13 +156,55 @@ public class GameManager : MonoBehaviour
         spawnPos.z = 0f; // Asegura que está en el mismo plano Z que el juego
         
         GameObject bossInstance = Instantiate(bossPrefab, spawnPos, Quaternion.identity);
-        Debug.Log($"Boss spawneado en posición: {spawnPos}");
     }
 
     public void BossDefeated()
     {
-        // Implementa lo que sucede cuando el jefe es derrotado
-        Debug.Log("¡Jefe derrotado! ¡Has ganado!");
-        GameOver();
+        
+        SpawnTrophy();
+        ShowVictoryScreen();
+        // Aseguramos que la pantalla de Game Over no aparezca
+        if (gameOver != null)
+        {
+            gameOver.SetActive(false);
+        }
+        if (playButton != null)
+        {
+            playButton.SetActive(false);
+        }
+    }
+
+    private void SpawnTrophy()
+    {
+        if (trophyPrefab != null)
+        {
+            Vector3 spawnPos = Camera.main.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0f));
+            spawnPos.z = 0f;
+            Instantiate(trophyPrefab, spawnPos, Quaternion.identity);
+        }
+    }
+
+    private void ShowVictoryScreen()
+    {
+        if (victoryScreen != null)
+        {
+            victoryScreen.SetActive(true);
+        }
+        Time.timeScale = 0f; // Pausa el juego
+        player.enabled = false; // Desactiva el control del jugador
+    }
+
+    public void RestartGame()
+    {
+        // Oculta todas las pantallas
+        if (victoryScreen != null)
+        {
+            victoryScreen.SetActive(false);
+        }
+        if (gameOver != null)
+        {
+            gameOver.SetActive(false);
+        }
+        Play();
     }
 }

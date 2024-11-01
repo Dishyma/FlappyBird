@@ -8,6 +8,7 @@ TagManager:
   - Scoring
   - Boss
   - Laser
+  - Trophy
   layers:
   - Default
   - TransparentFX
