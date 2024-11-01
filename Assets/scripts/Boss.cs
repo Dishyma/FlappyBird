@@ -9,9 +9,23 @@ public class Boss : MonoBehaviour
     public float amplitude = 3f; // Amplitud del movimiento vertical
     private float initialY;
 
+    // Nuevas variables para la animación
+    public Sprite[] bossSprites;  // Arreglo para almacenar los 4 sprites
+    private int currentSpriteIndex = 0;
+    public float animationSpeed = 0.2f;
+
+    private SpriteRenderer spriteRenderer;
+
     void Start()
     {
         initialY = transform.position.y;
+    
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+        }
+        StartCoroutine(AnimateSprites());
     }
 
     void Update()
@@ -19,6 +33,19 @@ public class Boss : MonoBehaviour
         // Movimiento vertical sinusoidal
         float newY = initialY + Mathf.Sin(Time.time * moveSpeed) * amplitude;
         transform.position = new Vector3(transform.position.x, newY, transform.position.z);
+    }
+
+    IEnumerator AnimateSprites()
+    {
+        while (true)
+        {
+            if (bossSprites.Length > 0)
+            {
+                spriteRenderer.sprite = bossSprites[currentSpriteIndex];
+                currentSpriteIndex = (currentSpriteIndex + 1) % bossSprites.Length;
+            }
+            yield return new WaitForSeconds(animationSpeed);
+        }
     }
 
     public void TakeDamage(int damage)
