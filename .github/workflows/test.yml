@@ -19,7 +19,7 @@ jobs:
         dotnet-version: '6.0.x' # Cambia esto a la versión que necesites
 
     - name: Restore dependencies
-      run: dotnet restore FlappyBird/MyProject.sln # Cambia a la ruta correcta
+      run: dotnet restore FlappyBird/FlappyBird.sln # Cambia a la ruta correcta
 
     - name: Build
       run: dotnet build FlappyBird/FlappyBird.sln --configuration Release --no-restore
