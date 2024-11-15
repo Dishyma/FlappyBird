@@ -22,7 +22,7 @@ jobs:
       run: dotnet restore FlappyBird.sln
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build FlappyBird.sln --configuration Release --no-restore
 
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test FlappyBird.sln --no-build --verbosity normal
