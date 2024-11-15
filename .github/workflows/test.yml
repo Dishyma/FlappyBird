@@ -17,10 +17,9 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '6.0.x' # Cambia esto a la versión que necesites
-    
-    - name: Print working directory
-        run: pwd
-    
+    - name: asdf
+      run: pwd
+
     - name: Restore dependencies
       run: dotnet restore ./FlappyBird.sln # Cambia a la ruta correcta
 
