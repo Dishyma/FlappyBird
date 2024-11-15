@@ -19,10 +19,10 @@ jobs:
         dotnet-version: '6.0.x' # Cambia esto a la versión que necesites
 
     - name: Restore dependencies
-      run: dotnet restore Assembly-CSharp/FlappyBird.sln # Cambia a la ruta correcta
+      run: dotnet restore FlappyBird.sln # Cambia a la ruta correcta
 
     - name: Build
-      run: dotnet build Assembly-CSharp/FlappyBird.sln --configuration Release --no-restore
+      run: dotnet build FlappyBird.sln --configuration Release --no-restore
 
     - name: Test
-      run: dotnet test Assembly-CSharp/FlappyBird.sln --no-build --verbosity normal
+      run: dotnet test FlappyBird.sln --no-build --verbosity normal
