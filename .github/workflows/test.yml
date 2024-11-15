@@ -21,8 +21,14 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore FlappyBird.sln
 
-    - name: Build
-      run: dotnet build FlappyBird.sln --configuration Release --no-restore
+    - name: Build project
+      uses: game-ci/unity-builder@v4
+      env:
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      with:
+        targetPlatform: ${{ matrix.targetPlatform }}
 
     - name: Test
       run: dotnet test FlappyBird.sln --no-build --verbosity normal
